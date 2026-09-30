@@ -40,7 +40,7 @@ export function Dialog({ open, onClose, title, children }: DialogProps) {
       <div className="dialog-content">
         <header className="dialog-header">
           <h2 id={titleId}>{title}</h2>
-          <button type="button" className="icon-button" aria-label="Close" onClick={onClose}>
+          <button type="button" className="icon-button flat" aria-label="Close" onClick={onClose}>
             <X size={20} aria-hidden="true" />
           </button>
         </header>

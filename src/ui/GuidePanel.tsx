@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import { formatMove } from '../cube/moves';
 import { describeMove, startGuide, stopGuide, useGuide } from '../solver/guide';
 import { IconButton } from './IconButton';
+import { describeKeyPress, keyForMove } from '../keys/keymap';
 
 /** The guided solve's instructions, shown in place of the timer while the guide is on. */
 export function GuidePanel() {
@@ -33,7 +34,12 @@ export function GuidePanel() {
         <>
           <div className="guide-move">
             <span className="guide-notation">{formatMove(next)}</span>
-            <span className="guide-text">{describeMove(next)}</span>
+            <span className="guide-text">
+              {describeMove(next)}
+              <span className="guide-key">
+                Press <strong>{describeKeyPress(keyForMove(next)!)}</strong>
+              </span>
+            </span>
           </div>
           <p className="guide-note">
             Follow the yellow arrow on the cube{rerouted ? '. This is a new route from where you are.' : '.'}

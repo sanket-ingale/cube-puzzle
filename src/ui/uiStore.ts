@@ -2,7 +2,6 @@ import { create } from 'zustand';
 
 const HELP_SEEN_KEY = 'cube-puzzle:help-seen:v1';
 const WIDE_SCREEN = '(min-width: 900px)';
-const TOUCH_SCREEN = '(pointer: coarse)';
 
 const matches = (query: string) => {
   try {
@@ -25,27 +24,44 @@ function firstVisit(): boolean {
 interface UiState {
   /** Desktop: the 2D panel beside the cube. Phones: the 2D view in place of the 3D one. */
   circularOpen: boolean;
-  /** The on-screen move buttons; shown by default on touch screens. */
-  padOpen: boolean;
   helpOpen: boolean;
   historyOpen: boolean;
   settingsOpen: boolean;
+  /** The camera has been moved away from the corner view the turn keys are laid out for. */
+  viewMoved: boolean;
+  /** Space is held, so the turn keys turn the other way. */
+  spaceHeld: boolean;
+  /** The on-screen reverse key is on (the touch-screen stand-in for holding Space). */
+  reverseLatched: boolean;
+  /** Bumped to ask the camera to glide back to the default view. */
+  viewResetRequest: number;
   toggleCircular: () => void;
-  togglePad: () => void;
+  setCircularOpen: (open: boolean) => void;
   setHelpOpen: (open: boolean) => void;
   setHistoryOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
+  setViewMoved: (moved: boolean) => void;
+  setSpaceHeld: (held: boolean) => void;
+  toggleReverse: () => void;
+  requestViewReset: () => void;
 }
 
 export const useUi = create<UiState>((set) => ({
   circularOpen: matches(WIDE_SCREEN),
-  padOpen: matches(TOUCH_SCREEN),
   helpOpen: firstVisit(),
   historyOpen: false,
   settingsOpen: false,
+  viewMoved: false,
+  spaceHeld: false,
+  reverseLatched: false,
+  viewResetRequest: 0,
   toggleCircular: () => set((s) => ({ circularOpen: !s.circularOpen })),
-  togglePad: () => set((s) => ({ padOpen: !s.padOpen })),
+  setCircularOpen: (circularOpen) => set({ circularOpen }),
   setHelpOpen: (helpOpen) => set({ helpOpen }),
   setHistoryOpen: (historyOpen) => set({ historyOpen }),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
+  setViewMoved: (viewMoved) => set({ viewMoved }),
+  setSpaceHeld: (spaceHeld) => set({ spaceHeld }),
+  toggleReverse: () => set((s) => ({ reverseLatched: !s.reverseLatched })),
+  requestViewReset: () => set((s) => ({ viewResetRequest: s.viewResetRequest + 1 })),
 }));

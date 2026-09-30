@@ -10,6 +10,7 @@ import { Timer } from './Timer';
 import { GuidePanel } from './GuidePanel';
 import { useGuide } from '../solver/guide';
 import { useUi } from './uiStore';
+import { describeKeyPress, keyForMove } from '../keys/keymap';
 
 const VISIBLE_MOVES = 40;
 
@@ -61,6 +62,8 @@ function StatsRow() {
       <IconButton
         icon={History}
         label="Solve history"
+        variant="flat"
+        tip="below-end"
         onClick={() => setHistoryOpen(true)}
         disabled={solves.length === 0}
       />
@@ -68,55 +71,66 @@ function StatsRow() {
   );
 }
 
-export function StatusCard() {
+/** The timer, the cube's state and the next hint; the guided solve takes its place while on. */
+export function StatusBlock() {
   const history = useCubeStore((s) => s.history);
   const userStart = useCubeStore((s) => s.userStart);
-  const scramble = useCubeStore((s) => s.scramble);
   const solvedNow = useCubeStore((s) => s.lastSolve !== null);
   const inspection = useCubeStore((s) => s.inspection);
   const setInspection = useCubeStore((s) => s.setInspection);
   const hint = useCurrentHint();
   const solverError = useAssist((s) => s.error);
-
-  const playerMoves = history.slice(userStart);
   const guiding = useGuide((s) => s.status !== 'off');
+  const moves = history.length - userStart;
 
-  // While guiding, the step to make is the only thing that matters, so the rest steps aside.
   if (guiding) {
     return (
-      <section className="panel status" aria-label="Guided solve">
+      <section className="panel status guide-card" aria-label="Guided solve">
         <GuidePanel />
       </section>
     );
   }
 
   return (
-    <section className="panel status" aria-label="Solve status">
+    <section className="status" aria-label="Solve status">
       <div className="status-head">
         <Timer />
         <IconButton
           icon={Hourglass}
           label={inspection ? '15-second inspection: on' : '15-second inspection: off'}
+          variant="flat"
           onClick={() => setInspection(!inspection)}
           pressed={inspection}
         />
       </div>
-
       <div className="status-line">
         <StatusBadge />
         {!solvedNow && (
           <span className="move-count">
-            {playerMoves.length} {playerMoves.length === 1 ? 'move' : 'moves'}
+            {moves} {moves === 1 ? 'move' : 'moves'}
           </span>
         )}
         {hint && (
           <span className="hint-chip" role="status">
-            Next: <strong>{formatMove(hint)}</strong>
+            Next: <strong>{formatMove(hint)}</strong> · press <strong>{describeKeyPress(keyForMove(hint)!)}</strong>
           </span>
         )}
       </div>
       {solverError && <p className="error-text">{solverError}</p>}
+    </section>
+  );
+}
 
+/** Stats for this device, and the current scramble and moves. */
+export function SessionCard() {
+  const history = useCubeStore((s) => s.history);
+  const userStart = useCubeStore((s) => s.userStart);
+  const scramble = useCubeStore((s) => s.scramble);
+  const playerMoves = history.slice(userStart);
+
+  return (
+    <section className="panel session" aria-label="Session">
+      <StatsRow />
       {scramble.length > 0 && (
         <details className="sequences">
           <summary>Scramble and moves</summary>
@@ -135,8 +149,6 @@ export function StatusCard() {
           )}
         </details>
       )}
-
-      <StatsRow />
     </section>
   );
 }

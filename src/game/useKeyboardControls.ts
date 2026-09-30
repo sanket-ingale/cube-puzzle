@@ -1,12 +1,19 @@
 import { useEffect } from 'react';
-import { MOVE_FACES, type MoveFace } from '../cube/moves';
 import { requestHint } from '../solver/assist';
+import { pressTurnKey } from '../keys/press';
+import { turnKeyMove } from '../keys/keymap';
 import { useUi } from '../ui/uiStore';
 import { useCubeStore } from './store';
 
+const onControl = (target: HTMLElement | null) =>
+  !!target?.closest('button, [role="button"], [role="switch"], [role="radio"], summary, a');
+
 /**
- * Letter keys map to moves: R turns R, Shift+R turns R'. Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z
- * or Ctrl+Y redoes. Space scrambles, H asks for a hint and ? opens the help.
+ * Keyboard controls.
+ *
+ * Q W E, I O P and F G H turn columns and rows as seen in the corner view, and holding Space
+ * turns them the other way. Enter scrambles, N shows a hint, Esc brings the view back to the
+ * corner, Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z or Ctrl+Y redoes, and ? opens the help.
  */
 export function useKeyboardControls() {
   useEffect(() => {
@@ -17,6 +24,7 @@ export function useKeyboardControls() {
       if (document.querySelector('dialog[open]')) return;
 
       const game = useCubeStore.getState();
+      const ui = useUi.getState();
       const key = e.key.toLowerCase();
 
       if (e.metaKey || e.ctrlKey) {
@@ -30,32 +38,65 @@ export function useKeyboardControls() {
         }
         return;
       }
-      if (e.repeat || e.altKey) return;
+      if (e.altKey) return;
 
-      if (e.key === '?') {
+      // Space is a modifier: never a page scroll or a button press.
+      if (e.code === 'Space') {
         e.preventDefault();
-        useUi.getState().setHelpOpen(true);
+        if (!ui.spaceHeld) ui.setSpaceHeld(true);
         return;
       }
-      // Space on a focused button presses that button, so only scramble from elsewhere.
-      if (e.key === ' ' && !target?.closest('button, [role="button"], summary')) {
+      if (e.repeat) {
+        if (turnKeyMove(e.code, false)) e.preventDefault();
+        return;
+      }
+      // Enter on a focused button presses that button, so only scramble from elsewhere.
+      if (e.key === 'Enter' && !onControl(target)) {
         e.preventDefault();
         game.scrambleCube();
         return;
       }
-      if (key === 'h') {
+      if (e.key === 'Escape') {
+        if (ui.viewMoved) {
+          e.preventDefault();
+          ui.requestViewReset();
+        }
+        return;
+      }
+      if (e.key === '?') {
+        e.preventDefault();
+        ui.setHelpOpen(true);
+        return;
+      }
+      if (e.code === 'KeyN') {
         e.preventDefault();
         void requestHint();
         return;
       }
-
-      const face = key.toUpperCase() as MoveFace;
-      if (!MOVE_FACES.includes(face)) return;
-      e.preventDefault();
-      game.enqueue([{ face, amount: e.shiftKey ? -1 : 1 }]);
+      if (turnKeyMove(e.code, false)) {
+        e.preventDefault();
+        // A clicked button keeps focus, where the next Enter would press it again.
+        if (onControl(target)) target!.blur();
+        pressTurnKey(e.code);
+      }
     };
 
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && useUi.getState().spaceHeld) {
+        e.preventDefault();
+        useUi.getState().setSpaceHeld(false);
+      }
+    };
+    // Switching windows while holding Space would otherwise leave it stuck "held".
+    const onBlur = () => useUi.getState().spaceHeld && useUi.getState().setSpaceHeld(false);
+
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+    };
   }, []);
 }

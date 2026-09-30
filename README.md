@@ -15,12 +15,17 @@ Other scripts: `npm test` runs the model tests, `npm run build` type-checks and 
 
 Everything is explained in the in-app help (the ? button, or the ? key), which opens on the first visit. The gear opens Settings.
 
-- The toolbar holds every action as an icon: scramble and reset, undo and redo, hint, solve and guided solve, and the view toggles (2D view, move buttons). With a mouse each icon has a tooltip with its shortcut.
-- Turn layers by dragging stickers in either view (both views move together, including part-way through a turn), with the move buttons, or with the letter keys (U D L R F B M E S; Shift for counter-clockwise). On the 3D cube a dragged layer follows your finger and settles on the nearest quarter turn when you let go; a quick flick completes the turn. Space scrambles, H gives a hint, Ctrl/Cmd+Z undoes.
+- The dock at the bottom holds the actions: Scramble in the middle, undo, redo and reset beside it, and hint, solve and guided solve in a tray (behind one button on phones). The 2D view switch sits top right, next to help and settings. With a mouse each icon has a tooltip with its shortcut.
+- Turn layers by dragging stickers in either view (both views move together, including part-way through a turn), or with the turn keys. On the 3D cube a dragged layer follows your finger and settles on the nearest quarter turn when you let go; a quick flick completes the turn.
 - Guided solve walks a first-timer through a solve one move at a time, with an arrow on the layer to turn, the matching circle marked in the 2D view, and the move in words. A different move gets a new route from wherever the cube is. Guided solves are saved with the hint tag.
 - The status card shows the timer (with the 15-second inspection toggle), the cube's state, a collapsible scramble and move list, and your stats. New personal bests (single, Ao5, Ao12) are celebrated with a message, confetti and a chime.
 - Settings: sounds (synthesised with Web Audio), vibration where the device supports it, sticker letters and high-contrast colours for colour-blind players, and the theme (Automatic follows the device, or choose Light or Dark).
-- Phones get a single column with the toolbar at the bottom, and the 2D button swaps the view between the 3D cube and the 2D circles. The move buttons are shown by default on touch screens.
+- The turn keys are laid out for the corner view the cube starts in, and are named by position, never by colour, since colours move as layers turn. Q W E turn the left face's left, middle and right columns down (L, M, R'), I O P do the same on the right face (F, S, B'), and F G H turn the top, middle and bottom rows to the right (U', E, D); hold Space, or tap Reverse on a touch screen, to turn the other way. Keys are read by position, so they work on any keyboard layout. The key guide is always on screen: keys light up as they're typed, they're the buttons on touch screens, and hints and the guided solve mark the key to press. Look around by dragging the space around the cube; any turn key, Esc or the Reset view button brings the corner view back. Enter scrambles, N gives a hint, Ctrl/Cmd+Z undoes.
+- Phones get a single column with the turn keys and the dock at the bottom, and the switch over the cube swaps between the 3D cube and the 2D circles. Wide screens open with the 2D view beside the cube, phones with the 3D cube.
+
+## Look and feel
+
+The style is called Toybox: warm paper in the light theme and a warm dark stage with a spotlight in the dark one, where the ink turns to chalk so the outlines and hard shadows still show; ink outlines on everything, and buttons that sit on a hard shadow and sink when pressed. Scramble is the one orange, labelled button; undo, redo and reset are plain keys beside it; the solver helpers share a lighter tray (one menu on phones); the view switches sit top right; help and settings are the quietest buttons of all. The typeface is Bricolage Grotesque (SIL Open Font License, bundled in `src/assets/fonts` with its licence), with tabular figures so the timer's digits don't jump.
 
 ## How it fits together
 
@@ -53,10 +58,13 @@ src/
   scene/   Cube.tsx    turn animator (pivot group + commit on finish)
            Cubie.tsx   one cubie: rounded body + stickers
            useDragToTurn.ts  pointer handling and camera projection for drags
-  ui/      Toolbar.tsx, StatusCard.tsx, Timer.tsx, MovePad.tsx  the controls
+  ui/      Toolbar.tsx, StatusCard.tsx, Timer.tsx  the controls
            HelpDialog.tsx, HistoryDialog.tsx, Dialog.tsx           dialogs on the native <dialog>
            SettingsDialog.tsx, GuidePanel.tsx, Celebration.tsx
-           IconButton.tsx, uiStore.ts, prefs.ts, theme.ts, useMediaQuery.ts
+           IconButton.tsx, BrandMark.tsx, uiStore.ts, prefs.ts, theme.ts, useMediaQuery.ts
+  keys/    keymap.ts   turn keys <-> moves (pure, tested against the corner view)
+           press.ts    one key press, typed or tapped
+           TurnKeys.tsx  the on-screen keys: guide, touch buttons and hint marker
 ```
 
 The model stores each cubie as an integer grid position plus stickers whose normals are world-space directions. Because stickers already point in world space, the renderer never needs per-cubie rotations.
