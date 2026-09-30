@@ -66,6 +66,11 @@ interface CubeStore {
 
   enqueue: (moves: Move[]) => void;
   scrambleCube: () => void;
+  /**
+   * Jumps to a solved cube and plays a given scramble, e.g. to set up a practice cube for a
+   * lesson. Nothing is timed or recorded.
+   */
+  setUpCube: (moves: Move[]) => void;
   undo: () => void;
   redo: () => void;
   completeActive: () => void;
@@ -188,6 +193,22 @@ export const useCubeStore = create<CubeStore>((set) => ({
       };
     }),
 
+  setUpCube: (moves) =>
+    set((s) => {
+      if (s.mode !== 'play' || s.active || s.grab) return s;
+      return {
+        ...schedule({ active: null, queue: [] }, moves),
+        ...noAttempt,
+        attemptDone: true,
+        cubies: createSolvedCube(),
+        mode: moves.length > 0 ? 'scrambling' : 'play',
+        history: [...moves],
+        userStart: moves.length,
+        redoStack: [],
+        scramble: [],
+      };
+    }),
+
   undo: () =>
     set((s) => {
       // The scramble itself can't be undone, only the player's moves after it.
@@ -222,7 +243,7 @@ export const useCubeStore = create<CubeStore>((set) => ({
       const settled = { cubies, active: null, queue: [], mode: 'play' as const };
       // Inspection begins once the scramble has finished playing.
       if (s.mode === 'scrambling') {
-        return { ...settled, inspectionStart: s.inspection ? Date.now() : null };
+        return { ...settled, inspectionStart: s.inspection && s.scramble.length > 0 ? Date.now() : null };
       }
 
       // Only a settled cube counts: passing through solved mid-sequence doesn't. Each scramble

@@ -932,6 +932,73 @@ button.danger:hover:not(:disabled) {
   font-size: 16px;
 }
 
+/* Touch screens: each button is a picture of its slice and direction. */
+.turn-key.picture {
+  height: 50px;
+}
+
+.slice-picture {
+  width: 36px;
+  height: 36px;
+  overflow: visible;
+}
+
+.slice-picture .tile {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.1;
+  stroke-opacity: 0.45;
+  stroke-linejoin: round;
+}
+
+.slice-picture .tile.on {
+  fill: var(--accent);
+  stroke-opacity: 0.8;
+}
+
+.slice-picture .slice-arrow {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.42;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* With a keyboard: the picture, and the key's letter under it. */
+.turn-key.with-letter {
+  flex-direction: column;
+  gap: 1px;
+  width: 54px;
+  height: 60px;
+}
+
+.turn-key.with-letter .slice-picture {
+  width: 30px;
+  height: 30px;
+}
+
+.key-letter {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.guide-picture {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  padding: 5px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--key);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.guide-picture .slice-picture {
+  width: 38px;
+  height: 38px;
+}
+
 /* A typed key sinks and lights up, like a pressed keycap. */
 .move.turn-key.lit,
 .move.turn-key.lit:hover:not(:disabled) {
@@ -1006,6 +1073,7 @@ button.danger:hover:not(:disabled) {
 .turn-keys-foot {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 4px 16px;
   margin: 2px 0 0;
   padding: 0;
@@ -1024,12 +1092,393 @@ button.danger:hover:not(:disabled) {
     display: none;
   }
 
+  .key-caption {
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .key-set {
+    gap: 5px;
+  }
+
+  .turn-key.with-letter {
+    width: 46px;
+    height: 56px;
+  }
+
+  .turn-key.with-letter .slice-picture {
+    width: 28px;
+    height: 28px;
+  }
+
   .key-caption .short {
     display: inline;
   }
 
   .turn-keys-foot {
     flex-direction: column;
+    align-items: center;
+  }
+}
+
+/* ---------- Learn mode ---------- */
+
+.learn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 14px 16px;
+}
+
+.learn-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.learn-head > .icon-button:first-child {
+  margin-left: -8px;
+}
+
+.learn-heading {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.learn-kicker {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.learn-title {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.learn-progress {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.learn-progress li {
+  flex: 1;
+  height: 6px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--key);
+}
+
+.learn-progress li.past {
+  background: var(--ok);
+}
+
+.learn-progress li.current {
+  background: var(--accent);
+}
+
+.learn-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.learn-body p {
+  margin: 0;
+}
+
+.learn-intro,
+.learn-note,
+.learn-idea p,
+.learn-try,
+.move-strip-note {
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.learn-note,
+.move-strip-note {
+  font-size: 12.5px;
+}
+
+.learn-goal {
+  font-size: 14.5px;
+}
+
+.learn-idea summary {
+  width: fit-content;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.learn-idea[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.learn-idea[open] summary {
+  margin-bottom: 2px;
+}
+
+.tool-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--key);
+}
+
+.tool-name {
+  font-weight: 800;
+  font-size: 13.5px;
+}
+
+.tool-moves {
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 800;
+  word-spacing: 0.25em;
+}
+
+.tool-what {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.learn-hold {
+  padding: 6px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--warn);
+  color: #1a1410;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.learn-help {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+}
+
+.learn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: var(--raise);
+}
+
+button.secondary.primary-action {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+button.secondary.primary-action:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+button.secondary:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.learn-count {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.learn-continue {
+  align-self: flex-start;
+}
+
+.learn-status,
+.learn-done {
+  font-size: 14.5px;
+}
+
+.lesson-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lesson-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px 7px 7px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--key);
+  box-shadow: 0 2px 0 var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+
+.lesson-row:hover {
+  background: var(--key-hover);
+}
+
+.lesson-row:active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.lesson-number {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.lesson-number.done {
+  background: var(--ok);
+  color: #10140f;
+}
+
+.lesson-title {
+  flex: 1;
+  font-weight: 700;
+}
+
+.lesson-go {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.move-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.move-part {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.move-part-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.rounds {
+  color: var(--accent);
+}
+
+.move-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.move-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 7px 3px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--key);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.move-chip.done {
+  opacity: 0.4;
+  box-shadow: none;
+  transform: translateY(2px);
+}
+
+.move-chip.now {
+  background: var(--warn);
+  color: #1a1410;
+}
+
+.move-chip-notation {
+  min-width: 1.6em;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.move-chip-key {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.move-chip-key .slice-picture {
+  width: 24px;
+  height: 24px;
+}
+
+.move-chip-letter {
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Lesson highlights in the 2D view, matching the rims on the cube. */
+.sticker.piece {
+  stroke: #ff3fd8;
+  stroke-width: 5;
+  animation: mark-pulse 0.8s ease-in-out infinite alternate;
+}
+
+.sticker.target {
+  stroke: #35e0ff;
+  stroke-width: 5;
+  animation: mark-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes mark-pulse {
+  from {
+    stroke-opacity: 0.45;
   }
 }
 
@@ -1357,6 +1806,54 @@ button.danger:hover:not(:disabled) {
   color: var(--on-accent);
 }
 
+.key-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.key-chart-title {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+
+.help-section .key-chart-keys {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.key-chart-keys li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 96px;
+  color: var(--muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.key-chart-picture {
+  display: inline-flex;
+  padding: 6px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--key);
+  box-shadow: 0 2px 0 var(--ink);
+  color: var(--text);
+}
+
+.key-chart-picture .slice-picture {
+  width: 40px;
+  height: 40px;
+}
+
 .shortcuts {
   border-collapse: collapse;
 }
@@ -1642,6 +2139,10 @@ button.danger:hover:not(:disabled) {
   height: 42px;
 }
 
+.narrow .turn-key.picture {
+  height: 50px;
+}
+
 .narrow .reverse-key {
   align-self: end;
   height: 42px;
@@ -1664,6 +2165,44 @@ button.danger:hover:not(:disabled) {
 .narrow .stage-tools .icon-button.tray {
   width: 36px;
   height: 36px;
+}
+
+/* On phones the lesson panel scrolls on its own, so the cube always keeps room to be seen. */
+.narrow .learn {
+  flex: none;
+  max-height: 34vh;
+  margin: 8px 12px 0;
+  overflow-y: auto;
+  box-shadow: 0 var(--raise) 0 var(--ink);
+}
+
+.narrow .stage {
+  min-height: 150px;
+}
+
+/* The heading and the help buttons stay in view while the lesson text scrolls. */
+.narrow .learn {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.narrow .learn-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-top: 8px;
+  background: var(--surface);
+}
+
+.narrow .learn-actions {
+  position: sticky;
+  bottom: 0;
+  padding: 8px 0 calc(8px + var(--raise));
+  background: var(--surface);
+}
+
+.narrow .move-strip-note {
+  display: none;
 }
 
 /* Short phones: a smaller clock and tighter spacing leave the cube more room. */
@@ -1702,6 +2241,15 @@ button.danger:hover:not(:disabled) {
   .narrow .turn-key,
   .narrow .reverse-key {
     height: 38px;
+  }
+
+  .narrow .turn-key.picture {
+    height: 44px;
+  }
+
+  .narrow .slice-picture {
+    width: 30px;
+    height: 30px;
   }
 
   .narrow .dock {
@@ -1770,6 +2318,13 @@ button.danger:hover:not(:disabled) {
 .side .circular-view {
   flex: none;
   max-height: 36vh;
+}
+
+/* Shorter laptop screens: a smaller 2D view keeps the keys and stats in reach. */
+@media (max-height: 820px) {
+  .side .circular-view {
+    max-height: 30vh;
+  }
 }
 
 /* Below the timer, over the top of the cube. */

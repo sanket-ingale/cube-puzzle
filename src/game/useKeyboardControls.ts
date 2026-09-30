@@ -3,6 +3,7 @@ import { requestHint } from '../solver/assist';
 import { pressTurnKey } from '../keys/press';
 import { turnKeyMove } from '../keys/keymap';
 import { useUi } from '../ui/uiStore';
+import { snapView } from '../scene/view';
 import { useCubeStore } from './store';
 
 const onControl = (target: HTMLElement | null) =>
@@ -12,8 +13,8 @@ const onControl = (target: HTMLElement | null) =>
  * Keyboard controls.
  *
  * Q W E, I O P and F G H turn columns and rows as seen in the corner view, and holding Space
- * turns them the other way. Enter scrambles, N shows a hint, Esc brings the view back to the
- * corner, Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z or Ctrl+Y redoes, and ? opens the help.
+ * turns them the other way. Enter scrambles, N shows a hint, Esc settles the view on the
+ * nearest corner, Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z or Ctrl+Y redoes, and ? opens the help.
  */
 export function useKeyboardControls() {
   useEffect(() => {
@@ -59,7 +60,7 @@ export function useKeyboardControls() {
       if (e.key === 'Escape') {
         if (ui.viewMoved) {
           e.preventDefault();
-          ui.requestViewReset();
+          snapView();
         }
         return;
       }

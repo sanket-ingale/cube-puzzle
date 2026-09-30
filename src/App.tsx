@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-import { Quaternion, Vector3, type PerspectiveCamera } from 'three';
+import { Quaternion, type PerspectiveCamera } from 'three';
+import { FreeControls } from './scene/FreeControls';
+import { frameQuaternion, registerCamera } from './scene/view';
 import { CircularPanel } from './circular/CircularPanel';
 import { Cube } from './scene/Cube';
 import { HelpDialog } from './ui/HelpDialog';
@@ -17,7 +18,8 @@ import { useThemeSetting } from './ui/theme';
 import { useKeyboardControls } from './game/useKeyboardControls';
 import { useRecordSolves } from './game/solves';
 import { useFeedback } from './game/feedback';
-import { useGuideTracker } from './solver/guide';
+import { useLearn, useLearnTracker } from './learn/learn';
+import { LearnPanel } from './learn/LearnPanel';
 
 const FOV = 40;
 /** Roughly the cube's bounding radius, with a little breathing room. */
@@ -39,83 +41,102 @@ function useFitDistance() {
   return Math.max(fitHeight, fitWidth);
 }
 
-/** The default view, which the turn keys are laid out for: looking down the corner of the top, left and right faces. */
-const CORNER_VIEW = new Vector3(1, 1, 1).normalize();
-const VIEW_RESET_SECONDS = 0.3;
+const VIEW_RESET_SECONDS = 0.35;
+/** How far the camera may drift from its corner view before it counts as moved. */
+const MOVED_ANGLE = 0.02;
 
 interface Controls {
-  enabled: boolean;
-  enableDamping: boolean;
-  update: () => void;
-  addEventListener: (type: 'start', listener: () => void) => void;
-  removeEventListener: (type: 'start', listener: () => void) => void;
+  addEventListener: (type: 'start' | 'change', listener: () => void) => void;
+  removeEventListener: (type: 'start' | 'change', listener: () => void) => void;
 }
 
+/**
+ * Keeps the camera on its corner view at the right distance, glides it to the view that
+ * snapping picked, and notices when the player turns it away.
+ */
 function CameraRig() {
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
   const controls = useThree((s) => s.controls) as unknown as Controls | null;
   const distance = useFitDistance();
   const resetRequest = useUi((s) => s.viewResetRequest);
-  const glide = useRef<{ from: Vector3; fromLength: number; t: number } | null>(null);
+  const glide = useRef<{ from: Quaternion; to: Quaternion; fromLength: number; t: number } | null>(null);
+  const placed = useRef(false);
 
   useEffect(() => {
-    camera.position.setLength(distance);
+    registerCamera(camera);
+    return () => registerCamera(null);
+  }, [camera]);
+
+  // Start on the current corner view, then keep the zoom fitted when the view changes size.
+  useEffect(() => {
+    if (!placed.current) {
+      placed.current = true;
+      const q = frameQuaternion(useUi.getState().viewFrame);
+      camera.quaternion.copy(q);
+      camera.up.set(0, 1, 0).applyQuaternion(q);
+    }
+    camera.position.set(0, 0, distance).applyQuaternion(camera.quaternion);
   }, [camera, distance]);
 
-  // A reset request glides the camera back to the corner view and the default zoom.
+  // Snapping picked a corner view: glide there along the shortest turn.
   useEffect(() => {
     if (resetRequest === 0) return;
-    glide.current = { from: camera.position.clone().normalize(), fromLength: camera.position.length(), t: 0 };
+    glide.current = {
+      from: camera.quaternion.clone(),
+      to: frameQuaternion(useUi.getState().viewFrame),
+      fromLength: camera.position.length(),
+      t: 0,
+    };
   }, [camera, resetRequest]);
 
-  // Any orbit or zoom by the player counts as moving the view.
+  // Turning the cube by hand stops a glide; drifting away from the corner view counts as moved.
   useEffect(() => {
     if (!controls) return;
     const onStart = () => {
       glide.current = null;
-      useUi.getState().setViewMoved(true);
+    };
+    const onChange = () => {
+      const target = frameQuaternion(useUi.getState().viewFrame);
+      const angle = 2 * Math.acos(Math.min(1, Math.abs(camera.quaternion.dot(target))));
+      const zoomed = Math.abs(camera.position.length() - distance) > 0.05;
+      if ((angle > MOVED_ANGLE || zoomed) && !useUi.getState().viewMoved) useUi.getState().setViewMoved(true);
     };
     controls.addEventListener('start', onStart);
-    return () => controls.removeEventListener('start', onStart);
-  }, [controls]);
+    controls.addEventListener('change', onChange);
+    return () => {
+      controls.removeEventListener('start', onStart);
+      controls.removeEventListener('change', onChange);
+    };
+  }, [camera, controls, distance]);
 
   useFrame((_, delta) => {
     const g = glide.current;
     if (!g) return;
     g.t = Math.min(1, g.t + Math.min(delta, 1 / 30) / VIEW_RESET_SECONDS);
     const eased = 1 - (1 - g.t) ** 3;
-    // Turn the direction along the shortest arc, so the camera never passes through the cube.
-    const turn = new Quaternion().setFromUnitVectors(g.from, CORNER_VIEW);
-    const step = new Quaternion().slerp(turn, eased);
+    camera.quaternion.slerpQuaternions(g.from, g.to, eased);
+    camera.up.set(0, 1, 0).applyQuaternion(camera.quaternion);
     const length = g.fromLength + (distance - g.fromLength) * eased;
-    camera.position.copy(g.from).applyQuaternion(step).multiplyScalar(length);
-    camera.lookAt(0, 0, 0);
-    if (controls) {
-      // Without damping, the controls drop any leftover spin instead of drifting afterwards.
-      controls.enableDamping = false;
-      controls.update();
-      if (g.t >= 1) controls.enableDamping = true;
-    }
+    camera.position.set(0, 0, length).applyQuaternion(camera.quaternion);
     if (g.t >= 1) {
       glide.current = null;
       useUi.getState().setViewMoved(false);
     }
   });
 
-  return (
-    <OrbitControls makeDefault enablePan={false} minDistance={5} maxDistance={Math.max(14, distance * 1.3)} />
-  );
+  return <FreeControls minDistance={5} maxDistance={Math.max(14, distance * 1.3)} />;
 }
 
 export function App() {
   useKeyboardControls();
   useRecordSolves();
   useFeedback();
-  useGuideTracker();
+  useLearnTracker();
   useThemeSetting();
   const viewMoved = useUi((s) => s.viewMoved);
   const circularOpen = useUi((s) => s.circularOpen);
   const narrow = useMediaQuery(NARROW_SCREEN);
+  const learning = useLearn((s) => s.status !== 'off');
 
   // Each layout starts with its own default: the 2D view beside the cube on wide screens, and
   // the 3D cube on phones (where the 2D view would cover it). Resizing across the breakpoint,
@@ -139,8 +160,8 @@ export function App() {
           <MetaButtons />
         </header>
       )}
-      {narrow && <StatusBlock />}
-      {narrow && !circularOpen && <SessionCard />}
+      {narrow && (learning ? <LearnPanel /> : <StatusBlock />)}
+      {narrow && !circularOpen && !learning && <SessionCard />}
       <main className="stage" aria-label="3D cube">
         <div className="cube-shadow" aria-hidden="true" />
         <Canvas camera={{ position: [5, 5, 5], fov: FOV }} dpr={[1, 2]} gl={{ alpha: true }}>
@@ -164,7 +185,7 @@ export function App() {
               {!narrow && <MetaButtons />}
             </div>
           </div>
-          {!narrow && <StatusBlock />}
+          {!narrow && !learning && <StatusBlock />}
           {!narrow && (
             <div className="stage-bottom">
               <Dock />
@@ -176,6 +197,7 @@ export function App() {
       {narrow && <Dock />}
       {!narrow && (
         <aside className="side">
+          {learning && <LearnPanel />}
           {circularOpen && <CircularPanel />}
           <TurnKeys />
           <SessionCard />

@@ -3,6 +3,8 @@ import { applyMove, applyMoves, parseMoves } from '../cube/moves';
 import { createSolvedCube } from '../cube/model';
 import { CUBE_INDEX_MAP, toFacelets } from '../cube/facelets';
 import { describeKeyPress, keyForMove, TURN_KEYS, turnKeyMove } from './keymap';
+import { ALL_FRAMES, DEFAULT_FRAME } from './frame';
+import { moveToTurn } from '../cube/moves';
 
 /**
  * Stickers are tracked by index: in the default view the left face is F (read with U on top,
@@ -61,7 +63,7 @@ describe('turn keys', () => {
   });
 
   it('covers all nine layers, once each', () => {
-    expect(new Set(TURN_KEYS.map((k) => k.move.face))).toEqual(new Set(['L', 'M', 'R', 'F', 'S', 'B', 'U', 'E', 'D']));
+    expect(new Set(TURN_KEYS.map((k) => turnKeyMove(k.code, false)!.face))).toEqual(new Set(['L', 'M', 'R', 'F', 'S', 'B', 'U', 'E', 'D']));
   });
 
   it('ignores other keys', () => {
@@ -84,9 +86,37 @@ describe('keyForMove', () => {
     }
   });
 
-  it('describes the key to press', () => {
-    expect(describeKeyPress(keyForMove({ face: 'L', amount: 1 })!)).toBe('Q');
-    expect(describeKeyPress(keyForMove({ face: 'R', amount: 1 })!)).toBe('Space + E');
-    expect(describeKeyPress(keyForMove({ face: 'U', amount: 2 })!)).toBe('F twice');
+  it('describes the key to press, or what to tap', () => {
+    expect(describeKeyPress(keyForMove({ face: 'L', amount: 1 })!)).toBe('press Q');
+    expect(describeKeyPress(keyForMove({ face: 'R', amount: 1 })!)).toBe('press Space + E');
+    expect(describeKeyPress(keyForMove({ face: 'U', amount: 2 })!)).toBe('press F twice');
+    expect(describeKeyPress(keyForMove({ face: 'R', amount: 1 })!, true)).toBe('turn on Reverse, then tap the lit button');
+  });
+});
+
+describe('turn keys in every corner view', () => {
+  it('has 24 distinct views', () => {
+    const keys = new Set(ALL_FRAMES.map((f) => JSON.stringify(f)));
+    expect(keys.size).toBe(24);
+    expect(ALL_FRAMES).toContainEqual(DEFAULT_FRAME);
+  });
+
+  it.each(ALL_FRAMES.map((f, i) => [i, f] as const))('view %i: keys follow the view, and every move has a key', (_, frame) => {
+    // Q is the left face's left column: the layer farthest from the right face.
+    const q = moveToTurn(turnKeyMove('KeyQ', false, frame)!);
+    expect(q.axis).toBe(frame.right.axis);
+    expect(q.layer).toBe(-frame.right.sign);
+    // F is the top row: the layer on the top face.
+    const f = moveToTurn(turnKeyMove('KeyF', false, frame)!);
+    expect(f.axis).toBe(frame.top.axis);
+    expect(f.layer).toBe(frame.top.sign);
+    for (const face of ['U', 'D', 'L', 'R', 'F', 'B', 'M', 'E', 'S'] as const) {
+      for (const amount of [1, -1, 2] as const) {
+        const press = keyForMove({ face, amount }, frame)!;
+        const once = turnKeyMove(press.key.code, press.reversed, frame)!;
+        const made = press.times === 2 ? applyMove(applyMove(start, once), once) : applyMove(start, once);
+        expect(toFacelets(made)).toEqual(toFacelets(applyMove(start, { face, amount })));
+      }
+    }
   });
 });

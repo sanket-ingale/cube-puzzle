@@ -7,10 +7,8 @@ import { useCubeStore } from '../game/store';
 import { useAssist, useCurrentHint } from '../solver/assist';
 import { IconButton } from './IconButton';
 import { Timer } from './Timer';
-import { GuidePanel } from './GuidePanel';
-import { useGuide } from '../solver/guide';
 import { useUi } from './uiStore';
-import { describeKeyPress, keyForMove } from '../keys/keymap';
+import { useKeyHint } from '../keys/useKeyHint';
 
 const VISIBLE_MOVES = 40;
 
@@ -71,7 +69,7 @@ function StatsRow() {
   );
 }
 
-/** The timer, the cube's state and the next hint; the guided solve takes its place while on. */
+/** The timer, the cube's state and the next hint. */
 export function StatusBlock() {
   const history = useCubeStore((s) => s.history);
   const userStart = useCubeStore((s) => s.userStart);
@@ -79,17 +77,9 @@ export function StatusBlock() {
   const inspection = useCubeStore((s) => s.inspection);
   const setInspection = useCubeStore((s) => s.setInspection);
   const hint = useCurrentHint();
+  const keyHint = useKeyHint(hint);
   const solverError = useAssist((s) => s.error);
-  const guiding = useGuide((s) => s.status !== 'off');
   const moves = history.length - userStart;
-
-  if (guiding) {
-    return (
-      <section className="panel status guide-card" aria-label="Guided solve">
-        <GuidePanel />
-      </section>
-    );
-  }
 
   return (
     <section className="status" aria-label="Solve status">
@@ -112,7 +102,7 @@ export function StatusBlock() {
         )}
         {hint && (
           <span className="hint-chip" role="status">
-            Next: <strong>{formatMove(hint)}</strong> · press <strong>{describeKeyPress(keyForMove(hint)!)}</strong>
+            Next: <strong>{formatMove(hint)}</strong> · {keyHint}
           </span>
         )}
       </div>

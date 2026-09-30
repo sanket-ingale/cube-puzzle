@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
+import { ArrowDown, ArrowDownUp, ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
 import { useCubeStore } from '../game/store';
 import { useCurrentHint } from '../solver/assist';
-import { useGuide } from '../solver/guide';
+import { useLearnNextMove } from '../learn/learn';
 import { useUi } from '../ui/uiStore';
+import { TOUCH_SCREEN, useMediaQuery } from '../ui/useMediaQuery';
+import { SlicePicture } from './SlicePicture';
 import { keyForMove, TURN_KEYS, type TurnKey } from './keymap';
-import { pressTurnKey } from './press';
+import { pressTurnKey, previewTurnKey } from './press';
 
 // Named by position in the corner view, never by colour: colours move around as layers turn.
 const GROUPS: { group: TurnKey['group']; title: string; short: string }[] = [
@@ -33,9 +35,10 @@ function PartIcon({ group }: { group: TurnKey['group'] }) {
 }
 
 /**
- * The turn keys: a keyboard guide and, on touch screens, the buttons themselves. Keys light up
- * as they're typed, the arrows flip while Space is held (or the reverse key is on), and the key
- * for the current hint or guide step is marked.
+ * The turn keys. Each is drawn as a small cube with its slice and direction; with a keyboard
+ * the key's letter sits under the picture and keys light up as they're typed, and on touch
+ * screens the pictures are the buttons. The arrows flip while Space is held or Reverse is on, and the key for the current
+ * hint or lesson step is marked. Everything is relative to the current corner view.
  */
 export function TurnKeys() {
   const spaceHeld = useUi((s) => s.spaceHeld);
@@ -43,11 +46,13 @@ export function TurnKeys() {
   const toggleReverse = useUi((s) => s.toggleReverse);
   const playing = useCubeStore((s) => s.mode === 'play');
   const hint = useCurrentHint();
-  const guideMove = useGuide((s) => (s.status === 'ready' ? s.plan[0] : null));
+  const guideMove = useLearnNextMove();
   const [lit, setLit] = useState<string | null>(null);
+  const frame = useUi((s) => s.viewFrame);
+  const touch = useMediaQuery(TOUCH_SCREEN);
   const reversed = spaceHeld || latched;
   const next = guideMove ?? hint;
-  const hinted = next ? keyForMove(next) : null;
+  const hinted = next ? keyForMove(next, frame) : null;
 
   useEffect(() => {
     let timeout = 0;
@@ -73,7 +78,7 @@ export function TurnKeys() {
 
   return (
     <section className={reversed ? 'panel turn-keys reversed' : 'panel turn-keys'} aria-label="Turn keys">
-      <p className="turn-keys-title">Turn keys</p>
+      <p className="turn-keys-title">{touch ? 'Turns' : 'Turn keys'}</p>
       <div className="key-groups">
         {GROUPS.map(({ group, title, short }) => (
           <div key={group} className="key-group">
@@ -86,17 +91,21 @@ export function TurnKeys() {
             <span className="key-set">
               {TURN_KEYS.filter((k) => k.group === group).map((k) => {
                 const isHinted = hinted?.key.code === k.code;
-                const classes = ['move', 'turn-key', lit === k.code && 'lit', isHinted && 'hinted'];
+                const classes = ['move', 'turn-key', 'picture', !touch && 'with-letter', lit === k.code && 'lit', isHinted && 'hinted'];
+                const name = `${title.toLowerCase()}, ${k.part}, ${direction(group)}`;
                 return (
                   <button
                     key={k.code}
                     type="button"
                     className={classes.filter(Boolean).join(' ')}
                     disabled={!playing}
-                    aria-label={`${k.label}: ${title.toLowerCase()}, ${k.part}, ${direction(group)}`}
+                    aria-label={touch ? name : `${k.label}: ${name}`}
                     onClick={() => pressTurnKey(k.code)}
+                    onPointerEnter={(e) => e.pointerType === 'mouse' && previewTurnKey(k.code)}
+                    onPointerLeave={() => previewTurnKey(null)}
                   >
-                    {k.label}
+                    <SlicePicture turnKey={k} reversed={reversed} />
+                    {!touch && <span className="key-letter">{k.label}</span>}
                     {isHinted && hinted.times === 2 && <span className="twice">×2</span>}
                   </button>
                 );
@@ -108,24 +117,26 @@ export function TurnKeys() {
           type="button"
           className={hinted?.reversed && !reversed ? 'move reverse-key hinted' : 'move reverse-key'}
           aria-pressed={reversed}
-          aria-label="Reverse: turn the other way (or hold Space)"
+          aria-label={touch ? 'Reverse: turn the other way' : 'Reverse: turn the other way (or hold Space)'}
           onClick={toggleReverse}
         >
-          <kbd>Space</kbd>
+          {touch ? <ArrowDownUp size={18} strokeWidth={2.5} aria-hidden="true" /> : <kbd>Space</kbd>}
           <span>{reversed ? 'Reversed' : 'Reverse'}</span>
         </button>
       </div>
-      <ul className="turn-keys-foot">
-        <li>
-          <kbd>Enter</kbd> scramble
-        </li>
-        <li>
-          <kbd>N</kbd> hint
-        </li>
-        <li>
-          <kbd>Esc</kbd> reset view
-        </li>
-      </ul>
+      {!touch && (
+        <ul className="turn-keys-foot">
+          <li>
+            <kbd>Enter</kbd> Scramble
+          </li>
+          <li>
+            <kbd>N</kbd> Hint
+          </li>
+          <li>
+            <kbd>Esc</kbd> Reset view
+          </li>
+        </ul>
+      )}
     </section>
   );
 }

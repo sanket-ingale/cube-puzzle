@@ -13,14 +13,14 @@ Other scripts: `npm test` runs the model tests, `npm run build` type-checks and 
 
 ## Controls
 
-Everything is explained in the in-app help (the ? button, or the ? key), which opens on the first visit. The gear opens Settings.
+Everything is explained in the in-app help (the ? button, or the ? key). It stays closed until asked for, so newcomers can work things out by playing. The gear opens Settings.
 
-- The dock at the bottom holds the actions: Scramble in the middle, undo, redo and reset beside it, and hint, solve and guided solve in a tray (behind one button on phones). The 2D view switch sits top right, next to help and settings. With a mouse each icon has a tooltip with its shortcut.
+- The dock at the bottom holds the actions: Scramble in the middle, undo, redo and reset beside it, and hint, solve and Learn to solve in a tray (behind one button on phones). The 2D view switch sits top right, next to help and settings. With a mouse each icon has a tooltip with its shortcut.
 - Turn layers by dragging stickers in either view (both views move together, including part-way through a turn), or with the turn keys. On the 3D cube a dragged layer follows your finger and settles on the nearest quarter turn when you let go; a quick flick completes the turn.
-- Guided solve walks a first-timer through a solve one move at a time, with an arrow on the layer to turn, the matching circle marked in the 2D view, and the move in words. A different move gets a new route from wherever the cube is. Guided solves are saved with the hint tag.
+- Learn to solve teaches the beginner's layer-by-layer method in seven lessons: the white cross (via a daisy), the first layer, the middle layer, the yellow cross, the yellow edges, the yellow corners into place and the last corner twists. Each lesson gives a goal and the idea behind it, then lets the player try. Help comes a rung at a time and only when asked: which piece (it glows pink on the cube and in the 2D view), where it goes (its spot is outlined in light blue), and how (the holding, a setup and the algorithm, shown move by move with the key pictures and followed as the player makes them). Show me plays the rest of a step. Whatever the player does, the next step is planned from the cube as it really is. Each lesson can be practised on a fresh cube with the earlier layers done, and finished lessons are remembered on the device. Lessons are held with yellow on top, and the camera turns to the right holding when the algorithm is shown. Learning isn't timed and stays out of the stats.
 - The status card shows the timer (with the 15-second inspection toggle), the cube's state, a collapsible scramble and move list, and your stats. New personal bests (single, Ao5, Ao12) are celebrated with a message, confetti and a chime.
 - Settings: sounds (synthesised with Web Audio), vibration where the device supports it, sticker letters and high-contrast colours for colour-blind players, and the theme (Automatic follows the device, or choose Light or Dark).
-- The turn keys are laid out for the corner view the cube starts in, and are named by position, never by colour, since colours move as layers turn. Q W E turn the left face's left, middle and right columns down (L, M, R'), I O P do the same on the right face (F, S, B'), and F G H turn the top, middle and bottom rows to the right (U', E, D); hold Space, or tap Reverse on a touch screen, to turn the other way. Keys are read by position, so they work on any keyboard layout. The key guide is always on screen: keys light up as they're typed, they're the buttons on touch screens, and hints and the guided solve mark the key to press. Look around by dragging the space around the cube; any turn key, Esc or the Reset view button brings the corner view back. Enter scrambles, N gives a hint, Ctrl/Cmd+Z undoes.
+- The cube tumbles freely: drag the space around it to turn it any way, upside down included; there are no poles and no fixed orientation. Reset view, Esc or any turn key settles it on the nearest of the 24 corner views (8 corners, 3 faces that can be on top), taking the smallest turn. The turn keys work in whichever corner view it's in and are named by position, never by colour: Q W E turn the left face's left, middle and right columns down, I O P do the same on the right face, and F G H turn the top, middle and bottom rows to the right; hold Space to turn the other way. Keys are read by position, so they work on any keyboard layout. Every key is drawn as a small cube with its slice filled in and an arrow for the direction, with the letter underneath; the guide is always on screen and keys light up as they're typed. A pressed key's layer lights up as it turns: each sticker brightens like a lit window, soft shafts of light in its own colour pour out of it (a brighter core in a faint haze, brighter where seen edge-on, with faint drifting streaks like light through uneven glass) and fade with distance, and the light spills onto the plastic around it as a coloured reflection. With a mouse, hovering a key lights up the layer it would move. On touch screens the pictures are the buttons, and a Reverse button flips the arrows. The help shows the same pictures, and lesson steps show the picture of each key to press. Hints and lessons mark the key (or button) for the next move in the current view. Enter scrambles, N gives a hint, Ctrl/Cmd+Z undoes.
 - Phones get a single column with the turn keys and the dock at the bottom, and the switch over the cube swaps between the 3D cube and the 2D circles. Wide screens open with the 2D view beside the cube, phones with the 3D cube.
 
 ## Look and feel
@@ -41,7 +41,6 @@ src/
            search.ts   shortest-first search for exact short hints
            facelets.ts centre-aware solver input
            assist.ts   hint and solve requests
-           guide.ts    the guided solve: plans, follows the player, re-plans on detours
   circular/ layout.ts  9 layer circles and the 54 sticker crossing points
            CircularView.tsx  presentational SVG (cubeState, onMoveDispatch)
            CircularPanel.tsx connects the view to the store
@@ -58,20 +57,29 @@ src/
   scene/   Cube.tsx    turn animator (pivot group + commit on finish)
            Cubie.tsx   one cubie: rounded body + stickers
            useDragToTurn.ts  pointer handling and camera projection for drags
+           FreeControls.tsx  free tumbling (no poles) and zoom
+           view.ts     corner-view orientations and snapping to the nearest one
   ui/      Toolbar.tsx, StatusCard.tsx, Timer.tsx  the controls
            HelpDialog.tsx, HistoryDialog.tsx, Dialog.tsx           dialogs on the native <dialog>
-           SettingsDialog.tsx, GuidePanel.tsx, Celebration.tsx
+           SettingsDialog.tsx, Celebration.tsx
            IconButton.tsx, BrandMark.tsx, uiStore.ts, prefs.ts, theme.ts, useMediaQuery.ts
-  keys/    keymap.ts   turn keys <-> moves (pure, tested against the corner view)
+  learn/   lbl.ts      the beginner's method as a planner: stages, one piece or case per step (pure, tested)
+           view.ts     looking at the cube as held (yellow on top), and held moves as real ones
+           learn.ts    learn mode: lessons, the help rungs, following the player, practice cubes
+           lessons.ts  the lessons' words and the algorithms' names
+           LearnPanel.tsx  the lesson panel
+  keys/    frame.ts    the 24 corner views (which cube axes are right, top and left)
+           keymap.ts   turn keys <-> moves in any corner view (pure, tested in all 24)
            press.ts    one key press, typed or tapped
-           TurnKeys.tsx  the on-screen keys: guide, touch buttons and hint marker
+           TurnKeys.tsx, SlicePicture.tsx  the on-screen keys, and the touch-screen pictures
+           useKeyHint.ts  "press Space + Q" or "tap the lit button" for a move
 ```
 
 The model stores each cubie as an integer grid position plus stickers whose normals are world-space directions. Because stickers already point in world space, the renderer never needs per-cubie rotations.
 
 During a turn, the cubies in the moving layer render inside a pivot group that `useFrame` rotates. When the animation reaches its final angle, the move is committed to the model and the layer re-renders at its new integer positions with no rotation. Those two frames look identical, so the hand-off is seamless and floating-point error never reaches the model.
 
-A drag works out the face and cubie you grabbed from the hit point in the cube's own coordinates, projects that face's two directions onto the screen, and picks the one your drag follows. The layer then turns around `faceNormal × dragDirection`, which becomes an ordinary move in the queue. Orbit controls are paused from the moment you grab a sticker until you let go.
+A drag works out the face and cubie you grabbed from the hit point in the cube's own coordinates, projects that face's two directions onto the screen, and picks the one your drag follows. The layer then turns around `faceNormal × dragDirection`, which becomes an ordinary move in the queue. The camera controls are paused from the moment you grab a sticker until you let go.
 
 The 2D view never stores its own copy of the cube. It converts the per-cubie model into the 54-sticker Kociemba string whenever a move is committed, and sends notation back through the same `enqueue` as the keyboard. Its geometry has three families of concentric circles, one family per axis and one circle per layer. A sticker is moved by exactly two layers, so it is drawn where those two circles cross, which means a layer turn slides the 12 stickers on its circle three places along it. The face patches come out as U, F and R in the inner triangle with L, B and D outside, and tests check every one of the nine circles against the cube model.
 

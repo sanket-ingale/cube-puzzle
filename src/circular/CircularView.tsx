@@ -92,6 +92,8 @@ interface CircularViewProps {
   palette?: Record<Color, string>;
   /** Show each sticker's colour initial (W, Y, G, B, R, O). */
   letters?: boolean;
+  /** Stickers to light up, by index: a lesson's piece and its target spot. */
+  marks?: Map<number, 'piece' | 'target'>;
 }
 
 function CircleControl({
@@ -158,6 +160,7 @@ export const CircularView = memo(function CircularView({
   hintMove = null,
   palette = STANDARD_PALETTE,
   letters = false,
+  marks,
 }: CircularViewProps) {
   const [hovered, setHovered] = useState<string | null>(null);
   const endDrag = useRef<(() => void) | null>(null);
@@ -344,7 +347,7 @@ export const CircularView = memo(function CircularView({
               }}
             >
               <circle
-                className={s.isCentre ? 'sticker centre' : 'sticker'}
+                className={['sticker', s.isCentre && 'centre', marks?.get(s.stateIndex)].filter(Boolean).join(' ')}
                 data-index={s.stateIndex}
                 data-id={s.id}
                 cx={s.x}

@@ -4,7 +4,6 @@ import {
   CircleHelp,
   GraduationCap,
   Lightbulb,
-  Orbit,
   Redo2,
   RotateCcw,
   Scan,
@@ -19,11 +18,13 @@ import { isSolved } from '../cube/model';
 import { useCubeStore } from '../game/store';
 import { requestHint, requestSolve, useAssist } from '../solver/assist';
 import { prepareSolver, useSolverStatus } from '../solver/client';
-import { startGuide, stopGuide, useGuide } from '../solver/guide';
+import { closeLearn, openLearn, useLearn } from '../learn/learn';
 import { BrandMark } from './BrandMark';
 import { IconButton, type TipPlacement } from './IconButton';
 import { NARROW_SCREEN, useMediaQuery } from './useMediaQuery';
 import { useUi } from './uiStore';
+import { CirclesIcon } from './CirclesIcon';
+import { snapView } from '../scene/view';
 
 export function Brand() {
   return (
@@ -55,19 +56,19 @@ export function ViewSwitch() {
     return (
       <div className="button-tray" role="group" aria-label="View">
         <IconButton icon={Box} label="3D cube" variant="tray" tip="below-end" pressed={!circularOpen} onClick={() => circularOpen && toggleCircular()} />
-        <IconButton icon={Orbit} label="2D view" variant="tray" tip="below-end" pressed={circularOpen} onClick={() => !circularOpen && toggleCircular()} />
+        <IconButton icon={CirclesIcon} label="2D view" variant="tray" tip="below-end" pressed={circularOpen} onClick={() => !circularOpen && toggleCircular()} />
       </div>
     );
   }
 
   return (
     <div className="button-tray" role="group" aria-label="View">
-      <IconButton icon={Orbit} label="2D view" variant="tray" tip="below-end" pressed={circularOpen} onClick={toggleCircular} />
+      <IconButton icon={CirclesIcon} label="2D view" variant="tray" tip="below-end" pressed={circularOpen} onClick={toggleCircular} />
     </div>
   );
 }
 
-/** Shown once the view has been moved away from the corner the turn keys are laid out for. */
+/** Shown once the cube has been turned away from a corner view; settles it on the nearest one. */
 export function ResetViewButton() {
   return (
     <IconButton
@@ -76,7 +77,7 @@ export function ResetViewButton() {
       shortcut="Esc"
       text="Reset view"
       tip="below-end"
-      onClick={() => useUi.getState().requestViewReset()}
+      onClick={() => snapView()}
     />
   );
 }
@@ -93,17 +94,17 @@ interface AssistItem {
   pressed?: boolean;
 }
 
-/** Hint, solve and the guided solve, with whether each can be used right now. */
+/** Hint, solve and learn mode, with whether each can be used right now. */
 function useAssistItems(): AssistItem[] {
   const mode = useCubeStore((s) => s.mode);
   const busy = useCubeStore((s) => s.active !== null);
   const solved = useCubeStore((s) => isSolved(s.cubies));
   const pending = useAssist((s) => s.pending);
-  const guiding = useGuide((s) => s.status !== 'off');
+  const learning = useLearn((s) => s.status !== 'off');
   const solverStatus = useSolverStatus((s) => s.status);
 
   const playing = mode === 'play';
-  const disabled = !playing || busy || solved || guiding || pending !== null || solverStatus === 'error';
+  const disabled = !playing || busy || solved || learning || pending !== null || solverStatus === 'error';
   const thinking = solverStatus === 'loading' ? 'Preparing the solver…' : 'Working it out…';
 
   return [
@@ -126,11 +127,11 @@ function useAssistItems(): AssistItem[] {
     },
     {
       icon: GraduationCap,
-      label: guiding ? 'Stop the guided solve' : 'Guided solve: learn by following each move',
-      name: guiding ? 'Stop the guided solve' : 'Guided solve',
-      onClick: guiding ? stopGuide : startGuide,
-      disabled: !guiding && (!playing || busy || solverStatus === 'error'),
-      pressed: guiding,
+      label: learning ? 'Stop learning' : 'Learn to solve: the beginner’s method, step by step',
+      name: learning ? 'Stop learning' : 'Learn to solve',
+      onClick: learning ? closeLearn : openLearn,
+      disabled: !learning && (!playing || busy),
+      pressed: learning,
     },
   ];
 }

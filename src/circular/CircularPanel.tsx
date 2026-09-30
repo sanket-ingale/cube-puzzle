@@ -3,7 +3,7 @@ import { toFacelets } from '../cube/facelets';
 import { parseMoves } from '../cube/moves';
 import { useCubeStore } from '../game/store';
 import { useCurrentHint } from '../solver/assist';
-import { useGuide } from '../solver/guide';
+import { useLearnMarks, useLearnNextMove } from '../learn/learn';
 import { paletteFor } from '../cube/colors';
 import { usePrefs } from '../ui/prefs';
 import { CircularView } from './CircularView';
@@ -16,7 +16,8 @@ export function CircularPanel() {
   const grab = useCubeStore((s) => s.grab);
   const enqueue = useCubeStore((s) => s.enqueue);
   const hint = useCurrentHint();
-  const guideMove = useGuide((s) => (s.status === 'ready' ? s.plan[0] : null));
+  const guideMove = useLearnNextMove();
+  const marks = useLearnMarks();
   const letters = usePrefs((s) => s.letters);
   const palette = paletteFor(usePrefs((s) => s.highContrast));
 
@@ -37,6 +38,7 @@ export function CircularPanel() {
         hintMove={guideMove ?? hint}
         palette={palette}
         letters={letters}
+        marks={marks}
       />
     </section>
   );

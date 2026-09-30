@@ -5,9 +5,12 @@ import { AXIS_INDEX, isInLayer } from '../cube/model';
 import { moveToTurn } from '../cube/moves';
 import { useCubeStore } from '../game/store';
 import { layerMotion, liveDrag } from '../game/turnProgress';
-import { Cubie, useStickerAppearance } from './Cubie';
+import { Cubie, useMarkPulse, useStickerAppearance } from './Cubie';
+import { faceletIndex, faceOfNormal } from '../cube/facelets';
+import { useLearnMarks } from '../learn/learn';
+import { useUi } from '../ui/uiStore';
 import { GuideArrow } from './GuideArrow';
-import { useGuide } from '../solver/guide';
+import { useLearnNextMove } from '../learn/learn';
 import { useDragToTurn } from './useDragToTurn';
 
 const QUARTER_TURN_SECONDS = 0.18;
@@ -51,7 +54,20 @@ export function Cube() {
   const lastSolve = useCubeStore((s) => s.lastSolve);
   const completeActive = useCubeStore((s) => s.completeActive);
   const releaseGrab = useCubeStore((s) => s.releaseGrab);
-  const guideMove = useGuide((s) => (s.status === 'ready' ? s.plan[0] : null));
+  const guideMove = useLearnNextMove();
+  const learnMarks = useLearnMarks();
+  useMarkPulse();
+  const flash = useUi((s) => s.flash);
+  const marksFor = (c: (typeof cubies)[number]) => {
+    const lit = flash !== null && isInLayer(c, flash.axis, flash.layer);
+    if (learnMarks.size === 0 && !lit) return '';
+    return c.stickers
+      .map(({ normal }) => {
+        const mark = learnMarks.get(faceletIndex(faceOfNormal(normal), c.position));
+        return mark === 'piece' ? 'p' : mark === 'target' ? 't' : lit ? 'w' : '-';
+      })
+      .join('');
+  };
 
   const pivot = useRef<Group>(null);
   const whole = useRef<Group>(null);
@@ -148,13 +164,13 @@ export function Cube() {
   return (
     <group ref={whole} onPointerDown={onPointerDown}>
       {resting.map((c) => (
-        <Cubie key={c.id} cubie={c} />
+        <Cubie key={c.id} cubie={c} marks={marksFor(c)} />
       ))}
       {guideMove && !layer && <GuideArrow move={guideMove} />}
       {layer && (
         <group ref={pivot} key={active ? active.id : 'grab'} rotation={startRotation}>
           {turning.map((c) => (
-            <Cubie key={c.id} cubie={c} />
+            <Cubie key={c.id} cubie={c} marks={marksFor(c)} />
           ))}
         </group>
       )}
